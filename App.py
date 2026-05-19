@@ -22,13 +22,33 @@ def cargar_modelo():
 
 modelo, encoder, variables, scaler = cargar_modelo()
 
-# Diccionarios globales para el mapeo visual de las opciones
+# Diccionarios globales para el mapeo visual de las opciones en español
 opciones_si_no = {0: "No", 1: "Sí"}
 opciones_sexo = {0: "Femenino", 1: "Masculino"}
 opciones_salud = {1: "Excelente", 2: "Muy Buena", 3: "Buena", 4: "Regular", 5: "Mala"}
 
-#Interfaz gráfica
-#Se crea interfaz gráfica con streamlit para captura de los datos
+opciones_edad = {
+    1: "18 a 24 años", 2: "25 a 29 años", 3: "30 a 34 años", 4: "35 a 39 años",
+    5: "40 a 44 años", 6: "45 a 49 años", 7: "50 a 54 años", 8: "55 a 59 años",
+    9: "60 a 64 años", 10: "65 a 69 años", 11: "70 a 74 años", 12: "75 a 79 años",
+    13: "80 años o más"
+}
+
+opciones_ingresos = {
+    1: "Menos de $10,000 USD al año", 2: "$10,000 a menos de $15,000 USD al año",
+    3: "$15,000 a menos de $20,000 USD al año", 4: "$20,000 a menos de $25,000 USD al año",
+    5: "$25,000 a menos de $35,000 USD al año", 6: "$35,000 a menos de $50,000 USD al año",
+    7: "$50,000 a menos de $75,000 USD al año", 8: "$75,000 USD o más al año"
+}
+
+opciones_educacion = {
+    1: "Nunca asistió a la escuela o solo jardín de niños",
+    2: "Educación primaria (Grados 1 a 8)",
+    3: "Educación secundaria incompleta (Grados 9 a 11)",
+    4: "Graduado de secundaria o equivalente (High School)",
+    5: "Asistió a la universidad o escuela técnica (Incompleta)",
+    6: "Graduado universitario o título superior"
+}
 
 st.subheader("Datos Clínicos y Demográficos")
 
@@ -37,11 +57,11 @@ BMI = st.slider('Índice de Masa Corporal (BMI)', min_value=0.0, max_value=70.0,
 MentHlth = st.slider('Días con mala salud mental (últimos 30 días)', 0, 30, 0)
 PhysHlth = st.slider('Días con mala salud física (últimos 30 días)', 0, 30, 0)
 
-# Variables categóricas y ordinales
+# Variables categóricas y ordinales con mapeo de texto
 GenHlth = st.selectbox('Salud General Autopercibida', [1, 2, 3, 4, 5], format_func=lambda x: opciones_salud.get(x))
-Age = st.selectbox('Categoría de Edad (1: 18-24 ... 13: 80 o más)', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
-Education = st.selectbox('Nivel Educativo alcanzado', [1, 2, 3, 4, 5, 6])
-Income = st.selectbox('Nivel de Ingresos', [1, 2, 3, 4, 5, 6, 7, 8])
+Age = st.selectbox('Seleccione su rango de edad', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], format_func=lambda x: opciones_edad[x])
+Education = st.selectbox('Nivel educativo alcanzado', [1, 2, 3, 4, 5, 6], format_func=lambda x: opciones_educacion[x])
+Income = st.selectbox('Seleccione el nivel de ingresos estimado del paciente', [1, 2, 3, 4, 5, 6, 7, 8], format_func=lambda x: opciones_ingresos[x])
 
 # Variables binarias optimizadas para el usuario
 HighBP = st.selectbox('¿Tiene Presión Arterial Alta?', [0, 1], format_func=lambda x: opciones_si_no[x])
@@ -53,21 +73,21 @@ Fruits = st.selectbox('¿Consume frutas diariamente?', [0, 1], format_func=lambd
 Veggies = st.selectbox('¿Consume verduras diariamente?', [0, 1], format_func=lambda x: opciones_si_no[x])
 Sex = st.selectbox('Sexo Biológico', [0, 1], format_func=lambda x: opciones_sexo[x])
 
-# Crear diccionario con todas las variables en 0
+# Crear diccionario base con todas las variables en 0
 data_dict = {col: 0 for col in variables}
 
-# Variables numéricas
+# Asignación de variables numéricas
 data_dict['BMI'] = BMI
 data_dict['MentHlth'] = MentHlth
 data_dict['PhysHlth'] = PhysHlth
 
-# Variables categóricas
+# Asignación de variables categóricas (One-Hot Encoding manual)
 data_dict[f'GenHlth_{GenHlth}'] = 1
 data_dict[f'Age_{Age}'] = 1
 data_dict[f'Education_{Education}'] = 1
 data_dict[f'Income_{Income}'] = 1
 
-# Variables binarias (guardan internamente el 0 o 1 de la selección)
+# Asignación de variables binarias
 data_dict['HighBP_1'] = HighBP
 data_dict['HighChol_1'] = HighChol
 data_dict['Smoker_1'] = Smoker
@@ -77,7 +97,7 @@ data_dict['Fruits_1'] = Fruits
 data_dict['Veggies_1'] = Veggies
 data_dict['Sex_1'] = Sex
 
-# Crear dataframe final
+# Crear dataframe final para pasarle al predictor
 data = pd.DataFrame([data_dict])
 
 st.markdown("---")
