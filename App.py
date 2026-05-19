@@ -9,79 +9,52 @@ Original file is located at
 
 import pickle
 import pandas as pd
+import streamlit as st
 
-filename = 'modelo-cla -diabetes.pkl'
+# Configuración inicial de la página
+st.set_page_config(page_title="Predicción de Diabetes", layout="centered")
+st.title('Sistema de Predicción de Diabetes')
 
-modelo, encoder, variables, scaler = pickle.load(open(filename, 'rb'))
+@st.cache_resource
+def cargar_modelo():
+    filename = 'modelo-cla -diabetes.pkl'
+    return pickle.load(open(filename, 'rb'))
+
+modelo, encoder, variables, scaler = cargar_modelo()
+
+# Diccionarios globales para el mapeo visual de las opciones
+opciones_si_no = {0: "No", 1: "Sí"}
+opciones_sexo = {0: "Femenino", 1: "Masculino"}
+opciones_salud = {1: "Excelente", 2: "Muy Buena", 3: "Buena", 4: "Regular", 5: "Mala"}
 
 #Interfaz gráfica
 #Se crea interfaz gráfica con streamlit para captura de los datos
 
-import streamlit as st
+st.subheader("Datos Clínicos y Demográficos")
 
-st.title('Sistema de Predicción de Diabetes')
+# Variables numéricas
+BMI = st.slider('Índice de Masa Corporal (BMI)', min_value=0.0, max_value=70.0, value=25.0, step=0.1)
+MentHlth = st.slider('Días con mala salud mental (últimos 30 días)', 0, 30, 0)
+PhysHlth = st.slider('Días con mala salud física (últimos 30 días)', 0, 30, 0)
 
-BMI = st.slider('BMI', min_value=0.0, max_value=70.0, value=25.0, step=0.1)
+# Variables categóricas y ordinales
+GenHlth = st.selectbox('Salud General Autopercibida', [1, 2, 3, 4, 5], format_func=lambda x: opciones_salud.get(x))
+Age = st.selectbox('Categoría de Edad (1: 18-24 ... 13: 80 o más)', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+Education = st.selectbox('Nivel Educativo alcanzado', [1, 2, 3, 4, 5, 6])
+Income = st.selectbox('Nivel de Ingresos', [1, 2, 3, 4, 5, 6, 7, 8])
 
-MentHlth = st.slider('Mental Health', 0, 30, 0)
-
-PhysHlth = st.slider('Physical Health', 0, 30, 0)
-
-GenHlth = st.selectbox('General Health',
-                       [1,2,3,4,5])
-
-Age = st.selectbox('Age',
-                   [1,2,3,4,5,6,7,8,9,10,11,12,13])
-
-Education = st.selectbox('Education',
-                         [1,2,3,4,5,6])
-
-Income = st.selectbox('Income',
-                      [1,2,3,4,5,6,7,8])
-
-HighBP = st.selectbox('High Blood Pressure',
-                      [0,1])
-
-HighChol = st.selectbox('High Cholesterol',
-                        [0,1])
-
-Smoker = st.selectbox('Smoker',
-                      [0,1])
-
-Stroke = st.selectbox('Stroke',
-                      [0,1])
-
-PhysActivity = st.selectbox('Physical Activity',
-                            [0,1])
-
-Fruits = st.selectbox('Fruits',
-                      [0,1])
-
-Veggies = st.selectbox('Veggies',
-                       [0,1])
-
-Sex = st.selectbox('Sex',
-                   [0,1])
-
-BMI = 25.0
-MentHlth = 5
-PhysHlth = 3
-GenHlth = 2
-Age = 5
-Education = 4
-Income = 6
-HighBP = 1
-HighChol = 0
-Smoker = 0
-Stroke = 0
-PhysActivity = 1
-Fruits = 1
-Veggies = 1
-Sex = 1
+# Variables binarias optimizadas para el usuario
+HighBP = st.selectbox('¿Tiene Presión Arterial Alta?', [0, 1], format_func=lambda x: opciones_si_no[x])
+HighChol = st.selectbox('¿Tiene Colesterol Alto?', [0, 1], format_func=lambda x: opciones_si_no[x])
+Smoker = st.selectbox('¿Ha fumado al menos 100 cigarrillos en su vida?', [0, 1], format_func=lambda x: opciones_si_no[x])
+Stroke = st.selectbox('¿Ha sufrido un Accidente Cerebrovascular (Derrame)?', [0, 1], format_func=lambda x: opciones_si_no[x])
+PhysActivity = st.selectbox('¿Realizó actividad física en los últimos 30 días?', [0, 1], format_func=lambda x: opciones_si_no[x])
+Fruits = st.selectbox('¿Consume frutas diariamente?', [0, 1], format_func=lambda x: opciones_si_no[x])
+Veggies = st.selectbox('¿Consume verduras diariamente?', [0, 1], format_func=lambda x: opciones_si_no[x])
+Sex = st.selectbox('Sexo Biológico', [0, 1], format_func=lambda x: opciones_sexo[x])
 
 # Crear diccionario con todas las variables en 0
-
-data_dict = {col:0 for col in variables}
+data_dict = {col: 0 for col in variables}
 
 # Variables numéricas
 data_dict['BMI'] = BMI
@@ -94,7 +67,7 @@ data_dict[f'Age_{Age}'] = 1
 data_dict[f'Education_{Education}'] = 1
 data_dict[f'Income_{Income}'] = 1
 
-# Variables binarias
+# Variables binarias (guardan internamente el 0 o 1 de la selección)
 data_dict['HighBP_1'] = HighBP
 data_dict['HighChol_1'] = HighChol
 data_dict['Smoker_1'] = Smoker
@@ -104,14 +77,17 @@ data_dict['Fruits_1'] = Fruits
 data_dict['Veggies_1'] = Veggies
 data_dict['Sex_1'] = Sex
 
-# Crear dataframe
+# Crear dataframe final
 data = pd.DataFrame([data_dict])
 
-prediccion = modelo.predict(data)
+st.markdown("---")
 
-if prediccion[0] == 1:
-    st.error('El paciente puede tener diabetes')
-else:
-    st.success('El paciente no presenta diabetes')
-
-st.warning("El modelo XGBoost tiene una precisión del 83.7%")
+if st.button('Evaluar Paciente'):
+    prediccion = modelo.predict(data)
+    
+    if prediccion[0] == 1:
+        st.error('⚠️ El paciente puede tener diabetes')
+    else:
+        st.success('✅ El paciente no presenta indicadores de riesgo de diabetes')
+        
+    st.warning("Nota técnica: El modelo XGBoost tiene una precisión del 83.7%")
